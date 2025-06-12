@@ -63,8 +63,18 @@ else:  # RSI
     rs = avg_gain / avg_loss
     df['indicator'] = 100 - (100 / (1 + rs))
 
-point_limit = st.slider("🔢 Liczba ostatnich punktów", min_value=10, max_value=1000, value=200, step=10)
-df = df.tail(point_limit)
+
+# Zakres wolumenu
+min_volume = float(df['volume'].min())
+max_volume = float(df['volume'].max())
+volume_range = st.slider(
+    "📈 Zakres wolumenu",
+    min_value=min_volume,
+    max_value=max_volume,
+    value=(min_volume, max_volume)
+)
+
+df = df[(df['volume'] >= volume_range[0]) & (df['volume'] <= volume_range[1])]
 
 def candlestick_chart(data: pd.DataFrame):
     base = alt.Chart(data)
