@@ -73,14 +73,17 @@ def candlestick_chart(data: pd.DataFrame):
         alt.value('#06982d'),
         alt.value('#ae1325')
     )
+
+    y_domain = [data['low'].min(), data['high'].max()]
+
     rule = base.mark_rule().encode(
         x='datetime:T',
-        y='low:Q',
+        y=alt.Y('low:Q', scale=alt.Scale(domain=y_domain)),
         y2='high:Q'
     )
     bar = base.mark_bar().encode(
         x='datetime:T',
-        y='open:Q',
+        y=alt.Y('open:Q', scale=alt.Scale(domain=y_domain)),
         y2='close:Q',
         color=open_close_color
     )
