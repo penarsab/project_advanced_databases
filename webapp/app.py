@@ -33,14 +33,14 @@ import altair as alt
 dfs = []
 for symbol in selected_symbols:
     df = pd.read_sql(f"""
-        SELECT timestamp, close FROM crypto_prices
+        SELECT timestamp, close, volume FROM crypto_prices
         WHERE symbol = '{symbol}'
         ORDER BY timestamp ASC
     """, con=engine)
 
     df['datetime'] = pd.to_datetime(df['timestamp'], unit='ms')
     df['symbol'] = symbol
-    dfs.append(df[['datetime', 'close', 'symbol']])
+    dfs.append(df[['datetime', 'close', 'volume', 'symbol']])
 
 # Połącz wszystkie dane w jeden DataFrame
 df_all = pd.concat(dfs)
@@ -86,14 +86,18 @@ df_all = df_all[(df_all['pct_change'] >= change_range[0]) &
                 (df_all['pct_change'] <= change_range[1])]
 
 
-# Limit liczby punktów (opcjonalny filtr)
-point_limit = st.slider("🔢 Liczba ostatnich punktów do wyświetlenia",
-                        min_value=10,
-                        max_value=1000,
-                        value=200,
-                        step=10)
 
-df_all = df_all.groupby('symbol').apply(lambda x: x.tail(point_limit)).reset_index(drop=True)
+# Zakres wolumenu
+min_volume = float(df_all['volume'].min())
+max_volume = float(df_all['volume'].max())
+volume_range = st.slider(
+    "📈 Zakres wolumenu",
+    min_value=min_volume,
+    max_value=max_volume,
+    value=(min_volume, max_volume)
+)
+
+df_all = df_all[(df_all['volume'] >= volume_range[0]) & (df_all['volume'] <= volume_range[1])]
 
 
 # 📈 Altair multi-line chart
