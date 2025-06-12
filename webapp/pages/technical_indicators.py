@@ -66,10 +66,30 @@ else:  # RSI
 point_limit = st.slider("🔢 Liczba ostatnich punktów", min_value=10, max_value=1000, value=200, step=10)
 df = df.tail(point_limit)
 
-def price_chart(data: pd.DataFrame):
-    return alt.Chart(data).mark_line(color="#1f77b4").encode(
+def candlestick_chart(data: pd.DataFrame):
+    base = alt.Chart(data)
+    open_close_color = alt.condition(
+        'datum.open <= datum.close',
+        alt.value('#06982d'),
+        alt.value('#ae1325')
+    )
+    rule = base.mark_rule().encode(
         x='datetime:T',
-        y=alt.Y('close:Q', title='Cena (close)')
+        y='low:Q',
+        y2='high:Q'
+    )
+    bar = base.mark_bar().encode(
+        x='datetime:T',
+        y='open:Q',
+        y2='close:Q',
+        color=open_close_color
+    )
+    return rule + bar
+
+def volume_chart(data: pd.DataFrame):
+    return alt.Chart(data).mark_bar(color='#aaaaaa').encode(
+        x='datetime:T',
+        y=alt.Y('volume:Q', title='Wolumen')
     )
 
 def indicator_chart(data: pd.DataFrame, name: str):
@@ -83,16 +103,20 @@ def indicator_chart(data: pd.DataFrame, name: str):
     )
 
 if indicator == "RSI":
-    price = price_chart(df).properties(height=300)
+    candle = candlestick_chart(df).properties(height=300)
     ind = indicator_chart(df, f"RSI ({period})").properties(height=150)
-    st.altair_chart(price & ind, use_container_width=True)
+    vol = volume_chart(df).properties(height=100)
+    st.altair_chart(candle & ind & vol, use_container_width=True)
 else:
     ind_name = f"{indicator} ({period})"
+    candle = candlestick_chart(df)
+    ind_line = indicator_chart(df, ind_name)
     chart = alt.layer(
-        price_chart(df),
-        indicator_chart(df, ind_name)
-    ).resolve_scale(y='independent').properties(height=500)
-    st.altair_chart(chart, use_container_width=True)
+        candle,
+        ind_line
+    ).resolve_scale(y='independent').properties(height=400)
+    vol = volume_chart(df).properties(height=100)
+    st.altair_chart(chart & vol, use_container_width=True)
 
 # Eksport danych
 csv_buffer = io.StringIO()
